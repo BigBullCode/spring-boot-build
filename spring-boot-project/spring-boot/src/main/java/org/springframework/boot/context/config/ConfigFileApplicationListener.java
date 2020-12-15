@@ -102,14 +102,18 @@ import org.springframework.util.StringUtils;
  * @author Eddú Meléndez
  * @author Madhura Bhave
  * @since 1.0.0
+ *
+ * 文件加载监听器
  */
 public class ConfigFileApplicationListener implements EnvironmentPostProcessor, SmartApplicationListener, Ordered {
 
 	private static final String DEFAULT_PROPERTIES = "defaultProperties";
 
 	// Note the order is from least to most specific (last one wins)
+	//四个默认的加载文件，官方注释写到 这是一个排序最小的到最特色的，最后一个胜出
+	//大致意思如果四个下面都有配置文件，会执行最后一个的
 	private static final String DEFAULT_SEARCH_LOCATIONS = "classpath:/,classpath:/config/,file:./,file:./config/";
-
+	//默认名称
 	private static final String DEFAULT_NAMES = "application";
 
 	private static final Set<String> NO_SEARCH_NAMES = Collections.singleton(null);
@@ -119,6 +123,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 	/**
 	 * The "active profiles" property name.
 	 */
+	//激活的配置文件
 	public static final String ACTIVE_PROFILES_PROPERTY = "spring.profiles.active";
 
 	/**
@@ -160,6 +165,10 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 				|| ApplicationPreparedEvent.class.isAssignableFrom(eventType);
 	}
 
+	/**
+	 * 事件监听
+	 * @param event
+	 */
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
 		if (event instanceof ApplicationEnvironmentPreparedEvent) {
@@ -171,20 +180,26 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 	}
 
 	private void onApplicationEnvironmentPreparedEvent(ApplicationEnvironmentPreparedEvent event) {
+		//// 通过SPI机制加载EnvironmentPostProcessor实现类
 		List<EnvironmentPostProcessor> postProcessors = loadPostProcessors();
+		// 并将当前类也加入到postProcessors列表中
 		postProcessors.add(this);
+		// 根据Ordered接口或者添加@Order注解来给这个列表的对象进行排序
 		AnnotationAwareOrderComparator.sort(postProcessors);
+		// 依次调用EnvironmentPostProcessor的postProcessEnvironment的方法
 		for (EnvironmentPostProcessor postProcessor : postProcessors) {
 			postProcessor.postProcessEnvironment(event.getEnvironment(), event.getSpringApplication());
 		}
 	}
 
 	List<EnvironmentPostProcessor> loadPostProcessors() {
+		// 读取 META-INF/spring.factories 文件中定义的EnvironmentPostProcessor的实现类
 		return SpringFactoriesLoader.loadFactories(EnvironmentPostProcessor.class, getClass().getClassLoader());
 	}
 
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+		//将配置文件读取到PropertySource中，放入environment中去
 		addPropertySources(environment, application.getResourceLoader());
 	}
 
@@ -201,6 +216,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 	 */
 	protected void addPropertySources(ConfigurableEnvironment environment, ResourceLoader resourceLoader) {
 		RandomValuePropertySource.addToEnvironment(environment);
+		//加载配置文件
 		new Loader(environment, resourceLoader).load();
 	}
 
@@ -309,11 +325,31 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 					getClass().getClassLoader());
 		}
 
+		/**
+		 * 默认先读取的是location，然后是配置文件的名字“application”，最后才是文件类型“properties”或者“yml”；
+		 *
+		 * localtion有多种，可以自行debug：有file:./和file:./config和classpath等目录；
+		 *
+		 * 文件类型默认的有四种：properties、xml、yml、yaml
+		 *
+		 *
+		 * 最后查找的具体路径：location + name + "-" + profile + "." + ext
+		 *
+		 * 根据拼出来的路径去查找配置文件，一般配置文件都放在classpath目录下面，
+		 * 当读取到classpath目录下的配置文件的时候，程序去加载配置文件：
+		 *
+		 *
+		 * 当加载配置文件时，程序先会读取配置文件的spring.profiles.active属性，确定加载什么环境的配置文件（我是加载dev的）：
+		 *
+		 *
+		 * 然后在读取到的配置文件的属性加载到profiles队列中重新加载配置文件，代码如下，所以任何项目都必须现有一个基础的配置文件，如application.yml,然后在这个配置文件里面有一个active属性；
+		 */
 		public void load() {
 			this.profiles = new LinkedList<>();
 			this.processedProfiles = new LinkedList<>();
 			this.activatedProfiles = false;
 			this.loaded = new LinkedHashMap<>();
+			// 初始化profile信息
 			initializeProfiles();
 			while (!this.profiles.isEmpty()) {
 				Profile profile = this.profiles.poll();
@@ -324,7 +360,11 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 				this.processedProfiles.add(profile);
 			}
 			resetEnvironmentProfiles(this.processedProfiles);
+			// 加载默认版本(默认为null 也就是我们通常的application.properties)和激活版本
+			// （默认为default,所以也会加载application-default.properties资源）,
+			// 如果能在指定的搜索路径下查找到指定名称和后缀的资源文件,最后就会添加到loadDocumentsCache缓存中和loaded属性中
 			load(null, this::getNegativeProfileFilter, addToLoaded(MutablePropertySources::addFirst, true));
+			// 最后从loaded属性中将解析好的资源赋值到Environment中
 			addLoadedPropertySources();
 		}
 
@@ -332,6 +372,14 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 		 * Initialize profile information from both the {@link Environment} active
 		 * profiles and any {@code spring.profiles.active}/{@code spring.profiles.include}
 		 * properties that are already set.
+		 *
+		 * 1）判断是否指定了profile，如果没有，添加默认环境：default。后面的解析流程会解析default文件，比如：application-default.yml、application-default.properties。
+		 *
+		 * 注意：在第2步中我们提到了additionalProfiles属性，如果我们通过该属性指定了profile，
+		 * 这里就不会加载默认的配置文件，根据我们指定的profile进行匹配。
+		 *
+		 * 2）添加一个null的profile，主要用来加载没有指定profile的配置文件，比如：application.properties
+		 * 因为 profiles 采用了 LIFO 队列，后进先出。所以会先加载profile为null的配置文件，也就是匹配application.properties、application.yml。
 		 */
 		private void initializeProfiles() {
 			// The default profile for these purposes is represented as null. We add it
@@ -345,6 +393,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 			if (this.profiles.size() == 1) { // only has null profile
 				for (String defaultProfileName : this.environment.getDefaultProfiles()) {
 					Profile defaultProfile = new Profile(defaultProfileName, true);
+					//这里添加一个为null的profile，主要是加载默认的配置文件
 					this.profiles.add(defaultProfile);
 				}
 			}
@@ -442,6 +491,8 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 			for (PropertySourceLoader loader : this.propertySourceLoaders) {
 				for (String fileExtension : loader.getFileExtensions()) {
 					if (processed.add(fileExtension)) {
+						//加载配置文件，文件路径 //location+name++“."+fileExtension(文件扩展名)
+						//profile 是不同环境的配置文件
 						loadForFileExtension(loader, location + name, "." + fileExtension, profile, filterFactory,
 								consumer);
 					}
@@ -454,6 +505,27 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 					.anyMatch((fileExtension) -> StringUtils.endsWithIgnoreCase(name, fileExtension));
 		}
 
+		/**
+		 * profile代表不同环境 将profile传入loadForFileExtension()方法中如下:
+		 *
+		 * 对于激活文件也就是不同环境各自的配置文件和默认的文件的优先级
+		 * 下面的代码根据profile进行判断 profile=null的 addFirst profile!=null 的addLast
+		 * 很明显，先加载环境配置为空的也就是application.properties文件，
+		 * 再加载激活的环境配置文件 application-xxx.properties文件
+		 *
+		 * 所以配置文件的后缀可以有四种不同的方式 加载先后顺序为 properties，xml，yml，yaml 后加载的覆盖先加载的
+		 *
+		 * 解析逻辑：
+		 * 1）获取默认的配置文件路径，有4种。
+		 * 2）遍历所有的路径，拼装配置文件名称。
+		 * 3）再遍历解析器，选择yml或者properties解析，将解析结果添加到集合MutablePropertySources当中。
+		 * @param loader
+		 * @param prefix
+		 * @param fileExtension
+		 * @param profile
+		 * @param filterFactory
+		 * @param consumer
+		 */
 		private void loadForFileExtension(PropertySourceLoader loader, String prefix, String fileExtension,
 				Profile profile, DocumentFilterFactory filterFactory, DocumentConsumer consumer) {
 			DocumentFilter defaultFilter = filterFactory.getDocumentFilter(null);

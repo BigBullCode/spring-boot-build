@@ -36,6 +36,9 @@ public interface PropertySourceLoader {
 	/**
 	 * Returns the file extensions that the loader supports (excluding the '.').
 	 * @return the file extensions
+	 *
+	 * 关于文件扩展名由此接口PropertySourceLoader 加载
+	 * 这个接口里有一个方法String[] getFileExtensions();一共有两种实现方式
 	 */
 	String[] getFileExtensions();
 

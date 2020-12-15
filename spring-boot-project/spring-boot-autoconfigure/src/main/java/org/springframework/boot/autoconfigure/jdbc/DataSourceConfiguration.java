@@ -45,6 +45,7 @@ abstract class DataSourceConfiguration {
 
 	/**
 	 * Tomcat Pool DataSource configuration.
+	 * 生成该数据源会去读取propertySource中"spring.datasource.tomcat"打头的属性，用此来配置数据源
 	 */
 	@Configuration
 	@ConditionalOnClass(org.apache.tomcat.jdbc.pool.DataSource.class)
@@ -52,7 +53,6 @@ abstract class DataSourceConfiguration {
 	@ConditionalOnProperty(name = "spring.datasource.type", havingValue = "org.apache.tomcat.jdbc.pool.DataSource",
 			matchIfMissing = true)
 	static class Tomcat {
-
 		@Bean
 		@ConfigurationProperties(prefix = "spring.datasource.tomcat")
 		public org.apache.tomcat.jdbc.pool.DataSource dataSource(DataSourceProperties properties) {

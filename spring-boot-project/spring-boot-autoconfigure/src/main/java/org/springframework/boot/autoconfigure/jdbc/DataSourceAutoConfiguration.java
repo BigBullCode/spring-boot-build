@@ -12,6 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ *
  */
 
 package org.springframework.boot.autoconfigure.jdbc;
@@ -49,6 +51,7 @@ import org.springframework.util.StringUtils;
  * @author Stephane Nicoll
  * @author Kazuki Shimizu
  * @since 1.0.0
+ *  springBoot的默认数据源自动配置类
  */
 @Configuration
 @ConditionalOnClass({ DataSource.class, EmbeddedDatabaseType.class })
@@ -64,6 +67,9 @@ public class DataSourceAutoConfiguration {
 
 	}
 
+	/**
+	 * DataSourceConfiguration.Tomcat.class 配置数据源
+	 */
 	@Configuration
 	@Conditional(PooledDataSourceCondition.class)
 	@ConditionalOnMissingBean({ DataSource.class, XADataSource.class })

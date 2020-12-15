@@ -36,6 +36,10 @@ import org.springframework.util.ClassUtils;
  */
 public class YamlPropertySourceLoader implements PropertySourceLoader {
 
+	/**
+	 * 文件扩展名加载方式二
+	 * @return
+	 */
 	@Override
 	public String[] getFileExtensions() {
 		return new String[] { "yml", "yaml" };

@@ -124,6 +124,10 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
 		this.initialMulticaster.multicastEvent(new ApplicationPreparedEvent(this.application, this.args, context));
 	}
 
+	/**
+	 * 在容器启动完成后会广播一个SpringApplicationEvent事件，而SpringApplicationEvent事件是继承自ApplicationEvent时间的
+	 * @param context the application context.
+	 */
 	@Override
 	public void started(ConfigurableApplicationContext context) {
 		context.publishEvent(new ApplicationStartedEvent(this.application, this.args, context));

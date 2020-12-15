@@ -66,6 +66,85 @@ import org.springframework.util.StringUtils;
  * @author Andy Wilkinson
  * @since 1.0.0
  * @see SpringApplication
+ *
+ * 使用SpringApplicationBuilder指定其他配置
+ * 例一
+ * @SpringBootApplication
+ * public class TestDefaultFile {
+ * 	public static void main(String[] args) {
+ * 		ConfigurableApplicationContext context = new SpringApplicationBuilder(TestDefaultFile.class)
+ * 				//指定配置文件
+ * 				.properties("spring.config.location=classpath:/test-folder/my-config.properties")
+ * 				.run(args);
+ * 		// 输出变量
+ * 		System.out.println(context.getEnvironment().getProperty("jdbc.user"));
+ *        }
+ * }
+ *
+ * test-folder/my-config.properties
+ *
+ * jdbc.user=e
+ *
+ * 例二
+ * @SpringBootApplication
+ * public class TestProfiles {
+ *
+ * 	public static void main(String[] args) {
+ * 		ConfigurableApplicationContext context = new SpringApplicationBuilder(TestProfiles.class)
+ * 				.properties("spring.config.location=classpath:/test-profiles.yml")
+ * 				.properties("spring.profiles.active=oracle")
+ * 				.run(args);
+ * 		// 输出变量
+ * 		System.out.println(context.getEnvironment().getProperty("jdbc.driver"));
+ *
+ * 		// 启动第二个Spring容器，指定端口为8848
+ * 		ConfigurableApplicationContext context2 = new SpringApplicationBuilder(TestProfiles.class)
+ * 				.properties("spring.config.location=classpath:/test-profiles.yml")
+ * 				.properties("spring.profiles.active=mysql")
+ * 				.properties("server.port=8848")
+ * 				.run(args);
+ * 		// 输出变量
+ * 		System.out.println(context2.getEnvironment().getProperty("jdbc.driver"));
+ *        }
+ * }
+ *test-profiles.yml：
+ * spring:
+ *   profiles: mysql
+ * jdbc:
+ *   driver:
+ *     com.mysql.jdbc.Driver
+ * ---
+ * spring:
+ *   profiles: oracle
+ * jdbc:
+ *   driver:
+ *     oracle.jdbc.driver.OracleDriver
+ *
+ * 例三
+ *     @SpringBootApplication
+ * public class TestYaml {
+ *
+ * 	public static void main(String[] args) {
+ * 		ConfigurableApplicationContext context = new SpringApplicationBuilder(TestYaml.class)
+ * 				.properties("spring.config.location=classpath:/my-config.yml")
+ * 				.run(args);
+ *
+ * 		// 输出变量
+ * 		System.out.println(context.getEnvironment().getProperty("jdbc.user"));
+ * 		System.out.println(context.getEnvironment().getProperty("jdbc.passwd"));
+ * 		System.out.println(context.getEnvironment().getProperty("jdbc.driver"));
+ *        }
+ * }
+ *
+ * my-config.yml
+ *
+ * jdbc:
+ *   user:
+ *     root
+ *   passwd:
+ *     123456
+ *   driver:
+ *     com.mysql.jdbc.Driver
  */
 public class SpringApplicationBuilder {
 

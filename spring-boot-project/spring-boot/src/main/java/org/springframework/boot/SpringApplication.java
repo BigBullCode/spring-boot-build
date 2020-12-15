@@ -264,6 +264,8 @@ public class SpringApplication {
 	 * @param primarySources the primary bean sources
 	 * @see #run(Class, String[])
 	 * @see #setSources(Set)
+	 *
+	 * 创建一个SpringApplication实体，应用程序上下文将从指定的主源文档加载bean以获取详细信息
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
@@ -276,14 +278,30 @@ public class SpringApplication {
 		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
 		//从classPath中推断是否为web应用
 		//从类路径中推断应用程序类型放到SpringApplication的全局变量webApplicationType
+		// NONE：不需要再web容器的环境下运行，也就是普通的工程
+		//	 * SERVLET：基于servlet的Web项目
+		//	 * REACTIVE：响应式web应用reactive web Spring5版本的新特性
 		this.webApplicationType = WebApplicationType.deduceFromClasspath();
 		//设置初始化器initializer，最后调用此初始化器初始化
 		////从META-INF/spring.factories文件中获取ApplicationContextInitializer接口的实现类
 		// 并利用反射创建对象返回放入SpringApplication的全局变量initializers，List集合中
+		/**
+		 * 每一个initailizer都是一个实现了ApplicationContextInitializer接口的实例。
+		 * ApplicationContextInitializer是Spring IOC容器中提供的一个接口： void initialize(C applicationContext);
+		 * 这个方法它会在ConfigurableApplicationContext的refresh()方法调用之前被调用（prepareContext方法中调用）,
+		 * 做一些容器的初始化工作。
+		 */
 		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
 		//设置启动监听器
-		//同上，也是从META-INF/spring.factories文件中获取ApplicationListener接口的实现类
+		//同上，也是从META-INF/spring.factories文件中（该文件存在于各组件jar的META-INF目录下，存放相关组件的配置工厂类）
+		// 获取ApplicationListener接口的实现类
 		// 并利用反射创建对象返回放入SpringApplication的全局变量listeners，List集合中
+		/**
+		 * Springboot整个生命周期在完成一个阶段的时候都会通过事件推送器(EventPublishingRunListener)产生一个事件(ApplicationEvent)，
+		 * 然后再遍历每个监听器(ApplicationListener)以匹配事件对象，这是一种典型的观察者设计模式的实现
+		 *
+		 * zdd:这里应该是将META-INF/spring.factories下面的所有监听器ApplicationListener的实现类加入到监听器集合this.listeners中
+		 */
 		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
 		//获取mian方法所在的主类
 		////通过获取当前调用栈，找到入口方法main所在的类，放入SpringApplication的全局变量mainApplicationClass
@@ -329,7 +347,10 @@ public class SpringApplication {
 		try {
 			//创建启动参数对象 参数封装，也就是在命令行下启动应用带的参数，如--server.port=9000
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
-			//第二步：准备环境
+			//第二步：准备启动环境-
+			// 其中会将监听器装载到环境中，其中的监听器ConfigFileApplicationListener可加载配置文件，但只是将
+			//（application.properties文件被封装成了PropertySource存储到了environment中），并未使用里面的property属性
+			// TODO :2020-12-15 学习配置文件加载配置以及自动装备如何读取配置文件属性
 			ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);
 			configureIgnoreBeanInfo(environment);
 			//第三步：打印banner，就是启动的时候在console打印的Spring图案
@@ -339,9 +360,20 @@ public class SpringApplication {
 			//解析META-INF/spring.factories文件中SpringBootExceptionReporter接口的实现类，生成自定义异常集合
 			exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,
 					new Class[] { ConfigurableApplicationContext.class }, context);
-			//第五步：spring容器前置处理
+			//第五步：spring容器前置处理,准备应用程序上下文
+			/*
+			容器设置配置环境，并且监听容器，初始化容器，记录启动日志，
+		 * 将给定的singleton对象添加到此工厂的singleton缓存中。
+		 * 将bean加载到应用程序上下文中。
+			 */
 			prepareContext(context, environment, listeners, applicationArguments, printedBanner);
 			//第六步：刷新容器
+			/*
+			 1、同步刷新，对上下文的bean工厂包括子类的刷新准备使用，初始化此上下文的消息源，注册拦截bean的处理器，
+			 检查侦听器bean并注册它们，实例化所有剩余的(非延迟-init)单例。
+		 * 2、异步开启一个同步线程去时时监控容器是否被关闭，当关闭此应用程序上下文，销毁其bean工厂中的所有bean。
+		 * 。。。底层调refresh方法代码量较多
+			 */
 			refreshContext(context);
 			//第7步：Spring容器后置处理 扩展接口
 			afterRefresh(context, applicationArguments);
@@ -361,7 +393,7 @@ public class SpringApplication {
 		}
 
 		try {
-			// ?
+			// 发布一个运行中的事件
 			listeners.running(context);
 		}
 		catch (Throwable ex) {
@@ -376,13 +408,17 @@ public class SpringApplication {
 	private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners,
 			ApplicationArguments applicationArguments) {
 		// Create and configure the environment
-		//获取或创建环境
+		//获取或创建环境 根据前面定义的应用类型定义不同的环境
 		ConfigurableEnvironment environment = getOrCreateEnvironment();
-		// 配置环境：配置PropertySources和activeProfiles
+		// 配置环境：配置PropertySources和activeProfiles  将配置参数设置到配置环境中
 		configureEnvironment(environment, applicationArguments.getSourceArgs());
 		// 配置PropertySources对它自己的递归依赖
 		ConfigurationPropertySources.attach(environment);
 		// listeners环境准备(就是广播ApplicationEnvironmentPreparedEvent事件)。还记得这个listeners怎么来的吗？
+		/*
+		 * 发布一个环境装载成功的事件，并调用支持此事件的监听器
+		 * 这其中就有我们今天的主角：配置文件加载监听器（ConfigFileApplicationListener）
+		 */
 		listeners.environmentPrepared(environment);
 		// 将环境绑定到SpringApplication
 		bindToSpringApplication(environment);
@@ -556,7 +592,7 @@ public class SpringApplication {
 		}
 		switch (this.webApplicationType) { // 根据webApplicationType创建对应的Environment
 		case SERVLET:
-			return new StandardServletEnvironment();
+			return new StandardServletEnvironment(); //　StandardServletEnvironment继承自StandardEnvironment，也就是web环境是特殊的非web环境，有点类似正方形是特殊的长方形一样。AbstractEnvironment的构造方法调用了customizePropertySources方法，也就说StandardServletEnvironment在实例化的时候，他的customizePropertySources会被调用
 		case REACTIVE:
 			return new StandardReactiveWebEnvironment();
 		default:
@@ -580,7 +616,9 @@ public class SpringApplication {
 			ConversionService conversionService = ApplicationConversionService.getSharedInstance();
 			environment.setConversionService((ConfigurableConversionService) conversionService);
 		}
+		//配置propertySources
 		configurePropertySources(environment, args);
+		//配置Profiles
 		configureProfiles(environment, args);
 	}
 
