@@ -114,12 +114,19 @@ public abstract class AutoConfigurationPackages {
 
 	/**
 	 * {@link ImportBeanDefinitionRegistrar} to store the base package from the importing
-	 * configuration.
+	 * configuration.通过这个方法获取扫描的包路径
 	 */
 	static class Registrar implements ImportBeanDefinitionRegistrar, DeterminableImports {
 
+		/**TODO : (这段话逻辑有问题)将主配置类（即@SpringBootApplication标注的类）的所在包及子包里面所有组件扫描加载到Spring容器。所以包名一定要注意。
+		 *
+		 * 主配置类所在包及子包里的组件已经注册到了Registry中；这里只是注册autoConfigurationPackages这个名字的bean
+		 * @param metadata 为主类
+		 * @param registry
+		 */
 		@Override
 		public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
+			//new PackageImport(metadata).getPackageName()获取包路径 com.xxx
 			register(registry, new PackageImport(metadata).getPackageName());
 		}
 

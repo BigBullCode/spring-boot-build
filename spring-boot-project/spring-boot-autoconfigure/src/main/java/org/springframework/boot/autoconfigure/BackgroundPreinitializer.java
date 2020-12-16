@@ -65,6 +65,10 @@ public class BackgroundPreinitializer implements ApplicationListener<SpringAppli
 
 	private static final CountDownLatch preinitializationComplete = new CountDownLatch(1);
 
+	/**
+	 * 预初始化,将在后台的单独线程中运行 参考：https://blog.csdn.net/andy_zhang2007/article/details/84177779
+	 * @param event
+	 */
 	@Override
 	public void onApplicationEvent(SpringApplicationEvent event) {
 		if (!Boolean.getBoolean(IGNORE_BACKGROUNDPREINITIALIZER_PROPERTY_NAME)

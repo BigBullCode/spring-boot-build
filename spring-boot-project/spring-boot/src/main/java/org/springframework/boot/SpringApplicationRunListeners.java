@@ -30,6 +30,10 @@ import org.springframework.util.ReflectionUtils;
  * A collection of {@link SpringApplicationRunListener}.
  *
  * @author Phillip Webb
+ *
+ * SpringApplicationRunListeners持有一个SpringApplicationRunListener对象实例的集合，方便统一管理Listener。
+ *
+ * 该类封装了SpringApplicationRunListener接口的所有方法
  */
 class SpringApplicationRunListeners {
 
@@ -37,11 +41,20 @@ class SpringApplicationRunListeners {
 
 	private final List<SpringApplicationRunListener> listeners;
 
+	/**
+	 * EventPublishingRunListener创建好以后的ListenerRetriever是被当做SpringApplicationRunListeners构造的参数传递
+	 * @param log
+	 * @param listeners
+	 */
 	SpringApplicationRunListeners(Log log, Collection<? extends SpringApplicationRunListener> listeners) {
 		this.log = log;
 		this.listeners = new ArrayList<>(listeners);
 	}
 
+	/**
+	 * 循环SpringApplicationRunListener实例对象集合，去调用相关方法。
+	 * 在实例对象方法中通过SimpleApplicationEventMulticaster对象统一发布事件
+	 */
 	public void starting() {
 		for (SpringApplicationRunListener listener : this.listeners) {
 			listener.starting();

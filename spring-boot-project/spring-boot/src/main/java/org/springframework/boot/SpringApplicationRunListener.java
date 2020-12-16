@@ -22,11 +22,10 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.support.SpringFactoriesLoader;
 
 /**
- * Listener for the {@link SpringApplication} {@code run} method.
- * {@link SpringApplicationRunListener}s are loaded via the {@link SpringFactoriesLoader}
- * and should declare a public constructor that accepts a {@link SpringApplication}
- * instance and a {@code String[]} of arguments. A new
- * {@link SpringApplicationRunListener} instance will be created for each run.
+ * {@link SpringApplication} {@code run}方法的侦听器。
+ * {@link SpringApplicationRunListener}是通过{@link SpringFactoriesLoader}加载的，应该声明一个公共构造函数，
+ * 该构造函数接受{@link SpringApplication}实例和{@code String []}参数。
+ * 每次运行都会创建一个新的{@link SpringApplicationRunListener}实例。
  *
  * @author Phillip Webb
  * @author Dave Syer

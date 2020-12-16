@@ -96,6 +96,10 @@ public class SpringApplicationAdminMXBeanRegistrar implements ApplicationContext
 		return true;
 	}
 
+	/**
+	 * 监听到ApplicationReadyEvent事件的回调函数
+	 * @param event
+	 */
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
 		if (event instanceof ApplicationReadyEvent) {

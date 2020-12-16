@@ -39,6 +39,10 @@ public class ApplicationStartingEvent extends SpringApplicationEvent {
 	 * Create a new {@link ApplicationStartingEvent} instance.
 	 * @param application the current application
 	 * @param args the arguments the application is running with
+	 *
+	 *             ApplicationStartingEvent构造方法中传递了一个SpringApplication对象和args参数。
+	 *             一直传递到了父类EventObject，将SpringApplication对象存放在source变量中。
+	 *            EventObject getSource()方法得到的就是SpringApplication对象。
 	 */
 	public ApplicationStartingEvent(SpringApplication application, String[] args) {
 		super(application, args);

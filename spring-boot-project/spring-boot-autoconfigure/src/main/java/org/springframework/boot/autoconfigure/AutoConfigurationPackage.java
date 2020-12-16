@@ -32,12 +32,14 @@ import org.springframework.context.annotation.Import;
  * @author Phillip Webb
  * @since 1.3.0
  * @see AutoConfigurationPackages
+ *
+ * 这个注解是自动配置包，主要是使用的@Import来给Spring容器中导入一个组件 ，这里导入的是Registrar.class。
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@Import(AutoConfigurationPackages.Registrar.class)
+@Import(AutoConfigurationPackages.Registrar.class) //通过Registrar的registorBean
 public @interface AutoConfigurationPackage {
 
 }

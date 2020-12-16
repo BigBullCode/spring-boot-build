@@ -51,9 +51,14 @@ public class DelegatingApplicationListener implements ApplicationListener<Applic
 
 	private SimpleApplicationEventMulticaster multicaster;
 
+	/**
+	 * 只监听ApplicationEnvironmentPreparedEvent事件
+	 * @param event
+	 */
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
 		if (event instanceof ApplicationEnvironmentPreparedEvent) {
+			//得到配置项"context.listener.classes"设置的listener，得到实例对象添加到多播器multicaster中。
 			List<ApplicationListener<ApplicationEvent>> delegates = getListeners(
 					((ApplicationEnvironmentPreparedEvent) event).getEnvironment());
 			if (delegates.isEmpty()) {
@@ -64,11 +69,17 @@ public class DelegatingApplicationListener implements ApplicationListener<Applic
 				this.multicaster.addApplicationListener(listener);
 			}
 		}
+		//如果SimpleApplicationEventMulticaster不为空，继续广播事件。
 		if (this.multicaster != null) {
 			this.multicaster.multicastEvent(event);
 		}
 	}
 
+	/**
+	 * 得到配置项"context.listener.classes"设置的listener，得到实例对象添加到多播器multicaster中。
+	 * @param environment
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	private List<ApplicationListener<ApplicationEvent>> getListeners(ConfigurableEnvironment environment) {
 		if (environment == null) {

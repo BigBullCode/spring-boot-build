@@ -25,6 +25,7 @@ import java.lang.annotation.Target;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ *
  * Indicates that a class provides Spring Boot application
  * {@link Configuration @Configuration}. Can be used as an alternative to the Spring's
  * standard {@code @Configuration} annotation so that configuration can be found
@@ -36,11 +37,12 @@ import org.springframework.context.annotation.Configuration;
  *
  * @author Phillip Webb
  * @since 1.4.0
+ *
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Configuration
+@Configuration //表明该类是一个Spring的配置类。{@link Configuration @Configuration}注解内引入注解@Component 标识此类注解都是Spring的组件
 public @interface SpringBootConfiguration {
 
 }

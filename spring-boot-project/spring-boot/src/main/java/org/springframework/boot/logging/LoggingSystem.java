@@ -70,6 +70,8 @@ public abstract class LoggingSystem {
 	 * Reset the logging system to be limit output. This method may be called before
 	 * {@link #initialize(LoggingInitializationContext, String, LogFile)} to reduce
 	 * logging noise until the system has been fully initialized.
+	 *
+	 * 限制日志输出，直到日志系统完全初始化。实现方法很多都是没有做事情，可扩展
 	 */
 	public abstract void beforeInitialize();
 
@@ -145,6 +147,8 @@ public abstract class LoggingSystem {
 	 * Detect and return the logging system in use. Supports Logback and Java Logging.
 	 * @param classLoader the classloader
 	 * @return the logging system
+	 *
+	 * 检测并返回正在使用的日志系统。支持Logback和Java日志记录。
 	 */
 	public static LoggingSystem get(ClassLoader classLoader) {
 		String loggingSystem = System.getProperty(SYSTEM_PROPERTY);
@@ -154,6 +158,7 @@ public abstract class LoggingSystem {
 			}
 			return get(classLoader, loggingSystem);
 		}
+		//map生成流然后过滤，遍历key过滤，判断当前classLoader中是否存在。得到过滤后的元素在执行下面的get方法创建LoggingSystem实例，findFirst()方法得到第一个。如果不存在则抛异常。
 		return SYSTEMS.entrySet().stream().filter((entry) -> ClassUtils.isPresent(entry.getKey(), classLoader))
 				.map((entry) -> get(classLoader, entry.getValue())).findFirst()
 				.orElseThrow(() -> new IllegalStateException("No suitable logging system located"));

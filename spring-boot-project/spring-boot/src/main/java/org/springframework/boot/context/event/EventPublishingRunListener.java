@@ -54,8 +54,10 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
 	public EventPublishingRunListener(SpringApplication application, String[] args) {
 		this.application = application;
 		this.args = args;
+		//该对象主要作用为发布事件，用于广播事件到所有监听器
 		this.initialMulticaster = new SimpleApplicationEventMulticaster();
 		for (ApplicationListener<?> listener : application.getListeners()) {
+			//调用的是父类的方法，把listener循环添加到父类的ListenerRetriever对象的Set集合中
 			this.initialMulticaster.addApplicationListener(listener);
 		}
 	}
@@ -125,7 +127,8 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
 	}
 
 	/**
-	 * 在容器启动完成后会广播一个SpringApplicationEvent事件，而SpringApplicationEvent事件是继承自ApplicationEvent时间的
+	 * 在容器启动完成后会广播一个SpringApplicationEvent事件，
+	 * 而SpringApplicationEvent事件是继承自ApplicationEvent事件的
 	 * @param context the application context.
 	 */
 	@Override

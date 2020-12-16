@@ -32,7 +32,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.support.SpringFactoriesLoader;
-
 /**
  * Enable auto-configuration of the Spring Application Context, attempting to guess and
  * configure beans that you are likely to need. Auto-configuration classes are usually
@@ -72,13 +71,14 @@ import org.springframework.core.io.support.SpringFactoriesLoader;
  * @see ConditionalOnClass
  * @see AutoConfigureAfter
  * @see SpringBootApplication
- * Springboot 自动配置核心注解
+ * Springboot 自动配置核心注解，开启自动配置的功能
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
 @AutoConfigurationPackage
+//@Import注解就是给Spring容器中导入一些组件，这里传入了一个组件的选择器:AutoConfigurationImportSelector。内部的selectImports方法
 @Import(AutoConfigurationImportSelector.class)
 public @interface EnableAutoConfiguration {
 
@@ -99,3 +99,4 @@ public @interface EnableAutoConfiguration {
 	String[] excludeName() default {};
 
 }
+

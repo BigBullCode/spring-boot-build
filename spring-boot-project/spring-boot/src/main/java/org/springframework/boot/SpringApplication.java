@@ -300,7 +300,8 @@ public class SpringApplication {
 		 * Springboot整个生命周期在完成一个阶段的时候都会通过事件推送器(EventPublishingRunListener)产生一个事件(ApplicationEvent)，
 		 * 然后再遍历每个监听器(ApplicationListener)以匹配事件对象，这是一种典型的观察者设计模式的实现
 		 *
-		 * zdd:这里应该是将META-INF/spring.factories下面的所有监听器ApplicationListener的实现类加入到监听器集合this.listeners中
+		 * zdd:这里应该是将META-INF/spring.factories下面
+		 * 所有监听器ApplicationListener的实现类加入到监听器集合this.listeners中，共10个
 		 */
 		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
 		//获取mian方法所在的主类
@@ -342,7 +343,9 @@ public class SpringApplication {
 		configureHeadlessProperty();
 		//第一步：获取并启动监听器SpringApplicationListeners的实现类，即EventPublishingRunListener实例
 		SpringApplicationRunListeners listeners = getRunListeners(args);
-		// 触发启动事件，启动监听器会被调用，一共5个监听器被调用
+		// 触发启动事件，启动监听器会被调用，一共4个监听器被调用
+		//LoggingApplicationListener, BackgroundPreinitializer,DelegatingApplicationListener, LiquibaseServiceLocatorApplicationListener
+		// 广播个Event事件
 		listeners.starting();
 		try {
 			//创建启动参数对象 参数封装，也就是在命令行下启动应用带的参数，如--server.port=9000
@@ -373,6 +376,8 @@ public class SpringApplication {
 			 检查侦听器bean并注册它们，实例化所有剩余的(非延迟-init)单例。
 		 * 2、异步开启一个同步线程去时时监控容器是否被关闭，当关闭此应用程序上下文，销毁其bean工厂中的所有bean。
 		 * 。。。底层调refresh方法代码量较多
+
+		    实现自动配置
 			 */
 			refreshContext(context);
 			//第7步：Spring容器后置处理 扩展接口
@@ -393,7 +398,8 @@ public class SpringApplication {
 		}
 
 		try {
-			// 发布一个运行中的事件
+			// 发布一个运行中的事件ApplicationReadyEvent，
+			// 对应的监听器为SpringApplicationAdminMXBeanRegistrar，只监听这一个事件
 			listeners.running(context);
 		}
 		catch (Throwable ex) {
@@ -515,16 +521,31 @@ public class SpringApplication {
 	 */
 	private SpringApplicationRunListeners getRunListeners(String[] args) {
 		Class<?>[] types = new Class<?>[] { SpringApplication.class, String[].class };
+		//与SpringApplication初始化时的调用不同，这里传的是非空Class数组，
+		//传的数组包括SpingApplication.class和String.class。
+		// 即在创建SpringApplicationRunListener接口实现类对象的时候调用的构造方法是指定了参数类型的，
+		// 为types数组中的参数类型，然后还有SpringApplication和args，这两个想的到就是构造方法的参数了。
 		return new SpringApplicationRunListeners(logger,
 				getSpringFactoriesInstances(SpringApplicationRunListener.class, types, this, args));
 	}
 
+	/**
+	 * 解析META-INF/spring.factories文件下
+	 * ApplicationContextInitializer、
+	 * ApplicationListener、
+	 * SpringBootExceptionReporter、
+	 * SpringApplicationRunListeners等接口的实现类，基于ＳＰＩ可插拔
+	 * @param type
+	 * @param <T>
+	 * @return
+	 */
 	private <T> Collection<T> getSpringFactoriesInstances(Class<T> type) {
 		return getSpringFactoriesInstances(type, new Class<?>[] {});
 	}
 
 	/**
-	 * 解析META-INF/Spring.factories文件下ApplicationContextInitializer\ApplicationListener\SpringBootExceptionReporter
+	 * 解析META-INF/Spring.factories文件下
+	 * ApplicationContextInitializer\ApplicationListener\SpringBootExceptionReporter
 	 * SpringApplicationRunListeners等接口的实现类，基于SPI可插拔
 	 *
 	 * 主要是调用SpringFactoriesLoader.loadFactoryNames，然后调用createSpringFactoriesInstances。
@@ -570,6 +591,7 @@ public class SpringApplication {
 				Class<?> instanceClass = ClassUtils.forName(name, classLoader);
 				Assert.isAssignable(type, instanceClass);
 				Constructor<?> constructor = instanceClass.getDeclaredConstructor(parameterTypes);
+				//通过构造方法创建接口实现类的实例并放入集合
 				T instance = (T) BeanUtils.instantiateClass(constructor, args);
 				instances.add(instance);
 			}

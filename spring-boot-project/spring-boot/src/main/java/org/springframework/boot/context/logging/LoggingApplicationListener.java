@@ -194,12 +194,16 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 		return false;
 	}
 
+	/**
+	 * 创建日志系统对象，调用beforeInitialize()方法，限制日志输出，默认日志是使用logback。
+	 * @param event
+	 */
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
-		if (event instanceof ApplicationStartingEvent) {
+		if (event instanceof ApplicationStartingEvent) { //应用启动事件回调函数
 			onApplicationStartingEvent((ApplicationStartingEvent) event);
 		}
-		else if (event instanceof ApplicationEnvironmentPreparedEvent) {
+		else if (event instanceof ApplicationEnvironmentPreparedEvent) { //环境准备时间回调函数
 			onApplicationEnvironmentPreparedEvent((ApplicationEnvironmentPreparedEvent) event);
 		}
 		else if (event instanceof ApplicationPreparedEvent) {
@@ -214,6 +218,10 @@ public class LoggingApplicationListener implements GenericApplicationListener {
 		}
 	}
 
+	/**
+	 * 对应的是ApplicationStartingEvent事件发布，监听后的回调函数
+	 * @param event
+	 */
 	private void onApplicationStartingEvent(ApplicationStartingEvent event) {
 		this.loggingSystem = LoggingSystem.get(event.getSpringApplication().getClassLoader());
 		this.loggingSystem.beforeInitialize();

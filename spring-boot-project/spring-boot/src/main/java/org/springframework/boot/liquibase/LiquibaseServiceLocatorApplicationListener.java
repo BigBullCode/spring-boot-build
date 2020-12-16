@@ -37,6 +37,10 @@ public class LiquibaseServiceLocatorApplicationListener implements ApplicationLi
 
 	private static final Log logger = LogFactory.getLog(LiquibaseServiceLocatorApplicationListener.class);
 
+	/**
+	 * 将liquibase替换为与SpringBoot一起运行的版本，前提是当前classLoader中存在liquibase.servicelocator.CustomResolverServiceLocator
+	 * @param event
+	 */
 	@Override
 	public void onApplicationEvent(ApplicationStartingEvent event) {
 		if (ClassUtils.isPresent("liquibase.servicelocator.CustomResolverServiceLocator",

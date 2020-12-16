@@ -90,6 +90,11 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 
 	private ResourceLoader resourceLoader;
 
+	/**
+	 * 将所有需要导入的组件以全类名的方式返回；这些组件就会被添加到容器中
+	 * @param annotationMetadata
+	 * @return
+	 */
 	@Override
 	public String[] selectImports(AnnotationMetadata annotationMetadata) {
 		if (!isEnabled(annotationMetadata)) {
@@ -99,6 +104,7 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 				.loadMetadata(this.beanClassLoader);
 		AutoConfigurationEntry autoConfigurationEntry = getAutoConfigurationEntry(autoConfigurationMetadata,
 				annotationMetadata);
+		//会给容器中导入非常多的自动配置类（xxxAutoConfiguration）；就是给容器中导入这个场景需要的所有组件，并配置好这些组件:
 		return StringUtils.toStringArray(autoConfigurationEntry.getConfigurations());
 	}
 
@@ -115,6 +121,7 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 			return EMPTY_ENTRY;
 		}
 		AnnotationAttributes attributes = getAttributes(annotationMetadata);
+		//获取配置类
 		List<String> configurations = getCandidateConfigurations(annotationMetadata, attributes);
 		configurations = removeDuplicates(configurations);
 		Set<String> exclusions = getExclusions(annotationMetadata, attributes);
@@ -168,6 +175,12 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 	 * @param attributes the {@link #getAttributes(AnnotationMetadata) annotation
 	 * attributes}
 	 * @return a list of candidate configurations
+	 *
+	 * 通过loadFactoryNames方法会从META-INF/spring.factories中获取资源，然后通过Properties加载资源：
+	 *
+	 * Spring Boot在启动的时候从类路径下的META-INF/spring.factories中获取EnableAutoConfiguration指定的值，
+	 * 将这些值作为自动配置类导入到容器中，自动配置类就生效，帮我们进行自动配置工作。
+	 * 以前我们需要自己配置的东西，自动配置类都帮我们完成了。
 	 */
 	protected List<String> getCandidateConfigurations(AnnotationMetadata metadata, AnnotationAttributes attributes) {
 		List<String> configurations = SpringFactoriesLoader.loadFactoryNames(getSpringFactoriesLoaderFactoryClass(),
